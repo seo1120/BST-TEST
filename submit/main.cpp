@@ -94,7 +94,6 @@ bool __eraseBST(_NodePtr& __root, const _Tp& key) {
 
     if (!p) return false; // 삭제할 키가 없는 경우
 
-    // Case 1: 두 개의 자식을 가진 경우, 오른쪽 서브트리의 최소값 노드로 대체
     if (p->__left_ && p->__right_) {
         nodeStack.push(p);
         _NodePtr successor = __tree_min(p->__right_);
@@ -103,7 +102,6 @@ bool __eraseBST(_NodePtr& __root, const _Tp& key) {
         p = successor;
     }
 
-    // Case 2: 자식이 하나이거나 없는 경우
     _NodePtr child = (p->__left_) ? p->__left_ : p->__right_;
     if (q) {
         if (q->__left_ == p) q->__left_ = child;
@@ -112,7 +110,7 @@ bool __eraseBST(_NodePtr& __root, const _Tp& key) {
         __root = child;
     }
 
-    delete p;
+    delete p; // 메모리 해제
 
     while (!nodeStack.empty()) {
         q = nodeStack.top();
@@ -207,6 +205,6 @@ int main() {
         }
     }
 
-    tree.clear();
+    tree.clear(); // 모든 노드를 삭제하여 메모리 해제
     return 0;
 }
