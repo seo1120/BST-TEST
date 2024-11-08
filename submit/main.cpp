@@ -168,6 +168,8 @@ int main() {
 
     while (std::cin >> command >> key) {
         bool display_tree = true; // Flag to control whether to display tree or not
+        bool was_empty = tree.is_empty();
+
         switch (command) {
             case 'i':
                 if (!tree.insertBST(key)) {
@@ -177,11 +179,11 @@ int main() {
                 break;
             case 'd':
                 if (!tree.eraseBST(key)) {
-                    std::cerr << "d " << key << ": The key does not exist" << std::endl;
+                    std::cerr << "d " << key << ": The key does not exist";
                     display_tree = false; // Suppress tree display on non-existing delete
-                }
-                if (tree.is_empty()) {
+                } else if (tree.is_empty()) {
                     display_tree = false; // Suppress tree display if tree is now empty
+                    std::cout << std::endl; // Only add newline if the tree is now empty after deletion
                 }
                 break;
             default:
@@ -189,11 +191,9 @@ int main() {
                 return 1;
         }
         
-        // If tree should be displayed, output tree structure; otherwise, just a newline if the tree is empty.
-        if (display_tree) {
+        // If tree should be displayed, output tree structure
+        if (display_tree && !tree.is_empty()) {
             std::cout << tree << std::endl;
-        } else if (tree.is_empty()) {
-            std::cout << std::endl;
         }
     }
 
