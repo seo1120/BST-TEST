@@ -1,211 +1,215 @@
 #include <iostream>
 #include <stack>
 
-template <class _Tp> class Node;
-template <class _Tp> class BST;
-
-template <class _Tp>
+// Node 클래스
 class Node {
 public:
-    typedef _Tp __key_type;
-    typedef Node<__key_type>* __node_pointer_type;
+    int key;        // 키 값
+    Node* left;     // 왼쪽 자식 노드
+    Node* right;    // 오른쪽 자식 노드
 
-    __key_type __key_;
-    __node_pointer_type __left_;
-    __node_pointer_type __right_;
-    int height_;
-
-    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr), height_(1) {}
-    Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr), height_(1) {}
-
-    friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
-        if (np) {
-            os << "<";
-            if (np->__left_) os << np->__left_;
-            os << " " << np->__key_ << " ";
-            if (np->__right_) os << np->__right_;
-            os << ">";
-        } else {
-            os << "<>";
-        }
-        return os;
-    }
+    Node(int key) : key(key), left(nullptr), right(nullptr) {}
 };
 
-template <class _Tp>
+// getNodeBST 함수: 새 노드를 생성하는 함수
+Node* getNodeBST(int key) {
+    return new Node(key);
+}
+
+// BST 클래스
 class BST {
-public:
-    typedef _Tp key_type;
-    typedef Node<key_type>* pointer;
-
 private:
-    pointer __root_;
+    Node* root;
 
-    pointer getBSTNode(const key_type& key) {
-        return new Node<key_type>(key);
+    // 트리의 높이를 계산하는 함수
+    int height(Node* node) {
+        if (!node) return 0;
+        return 1 + std::max(height(node->left), height(node->right));
     }
 
-    void updateHeight(pointer node) {
+    // 트리의 크기를 계산하는 함수
+    int size(Node* node) {
+        if (!node) return 0;
+        return 1 + size(node->left) + size(node->right);
+    }
+
+    // 트리에서 최소 노드를 찾는 함수
+    Node* minNode(Node* node) {
+        while (node && node->left) {
+            node = node->left;
+        }
+        return node;
+    }
+
+    // 트리에서 최대 노드를 찾는 함수
+    Node* maxNode(Node* node) {
+        while (node && node->right) {
+            node = node->right;
+        }
+        return node;
+    }
+
+    // 트리를 중위 순회하여 출력하는 함수
+    void inorder(Node* node) const {
         if (node) {
-            int leftHeight = node->__left_ ? node->__left_->height_ : 0;
-            int rightHeight = node->__right_ ? node->__right_->height_ : 0;
-            node->height_ = 1 + std::max(leftHeight, rightHeight);
+            inorder(node->left);
+            std::cout << node->key << " ";
+            inorder(node->right);
+        }
+    }
+
+    // 트리의 노드를 재귀적으로 삭제하는 함수
+    void clear(Node* node) {
+        if (node) {
+            clear(node->left);
+            clear(node->right);
+            delete node;
         }
     }
 
 public:
-    BST() : __root_(nullptr) {}
+    // 생성자
+    BST() : root(nullptr) {}
 
-    bool insertBST(key_type newKey) {
-        pointer p = __root_;
-        pointer q = nullptr;
-        std::stack<pointer> nodeStack;
+    // 소멸자
+    ~BST() {
+        clear();
+    }
 
-        while (p != nullptr) {
-            if (newKey == p->__key_) {
-                return false; // newKey already exists
-            }
+    // 삽입 함수
+    bool insertBST(int key) {
+        Node* newNode = getNodeBST(key);
+        if (!root) {
+            root = newNode;
+            return true;
+        }
 
-            q = p;
-            nodeStack.push(q);
+        Node* current = root;
+        Node* parent = nullptr;
 
-            if (newKey < p->__key_) {
-                p = p->__left_;
+        while (current) {
+            parent = current;
+            if (key == current->key) {
+                delete newNode; // 이미 존재하는 키 값이면 새 노드 삭제
+                return false;
+            } else if (key < current->key) {
+                current = current->left;
             } else {
-                p = p->__right_;
+                current = current->right;
             }
         }
 
-        // Create new node
-        pointer newNode = getBSTNode(newKey);
-
-        if (q == nullptr) {
-            __root_ = newNode; // Tree was empty, set root
-        } else if (newKey < q->__key_) {
-            q->__left_ = newNode;
+        if (key < parent->key) {
+            parent->left = newNode;
         } else {
-            q->__right_ = newNode;
+            parent->right = newNode;
         }
-
-        // Update height while popping parent node from stack
-        while (!nodeStack.empty()) {
-            q = nodeStack.top();
-            nodeStack.pop();
-            updateHeight(q);
-        }
-
         return true;
     }
 
-    bool deleteBST(key_type deleteKey) {
-        pointer p = __root_;
-        pointer q = nullptr;
-        std::stack<pointer> nodeStack;
+    // 삭제 함수
+    bool eraseBST(int key) {
+        Node* current = root;
+        Node* parent = nullptr;
 
-        while (p != nullptr && deleteKey != p->__key_) {
-            q = p;
-            nodeStack.push(q);
-
-            if (deleteKey < p->__key_) {
-                p = p->__left_;
+        // 삭제할 노드를 찾는다.
+        while (current && current->key != key) {
+            parent = current;
+            if (key < current->key) {
+                current = current->left;
             } else {
-                p = p->__right_;
+                current = current->right;
             }
         }
 
-        if (p == nullptr) {
-            return false; // deleteKey was not found
+        if (!current) return false; // 삭제할 키가 존재하지 않음
+
+        // 자식이 두 개인 경우
+        if (current->left && current->right) {
+            Node* successor = minNode(current->right);
+            int successorKey = successor->key;
+            eraseBST(successorKey);
+            current->key = successorKey;
         }
+        // 자식이 없거나 하나인 경우
+        else {
+            Node* child = (current->left) ? current->left : current->right;
 
-        if (p->__left_ != nullptr && p->__right_ != nullptr) {
-            nodeStack.push(p);
-            pointer tempNode = p;
-
-            if (p->__left_->height_ <= p->__right_->height_) {
-                p = p->__right_;
-                while (p->__left_ != nullptr) {
-                    nodeStack.push(p);
-                    p = p->__left_;
-                }
+            if (!parent) {
+                root = child;
+            } else if (parent->left == current) {
+                parent->left = child;
             } else {
-                p = p->__left_;
-                while (p->__right_ != nullptr) {
-                    nodeStack.push(p);
-                    p = p->__right_;
-                }
+                parent->right = child;
             }
-            tempNode->__key_ = p->__key_;
-            q = nodeStack.top();
+            delete current;
         }
-
-        // Now degree of p is 0 or 1
-        pointer child = (p->__left_ != nullptr) ? p->__left_ : p->__right_;
-
-        if (q == nullptr) {
-            __root_ = child; // Deleting root node
-        } else if (q->__left_ == p) {
-            q->__left_ = child;
-        } else {
-            q->__right_ = child;
-        }
-
-        delete p;
-
-        // Update height while popping parent nodes from stack
-        while (!nodeStack.empty()) {
-            q = nodeStack.top();
-            nodeStack.pop();
-            updateHeight(q);
-        }
-
         return true;
     }
 
-    bool is_empty() const {
-        return __root_ == nullptr;
+    // 트리의 높이를 반환하는 함수
+    int height() {
+        return height(root);
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
-        os << tree.__root_;
-        return os;
+    // 트리의 크기를 반환하는 함수
+    int size() {
+        return size(root);
+    }
+
+    // 트리에서 최소 노드를 반환하는 함수
+    Node* minNode() {
+        return minNode(root);
+    }
+
+    // 트리에서 최대 노드를 반환하는 함수
+    Node* maxNode() {
+        return maxNode(root);
+    }
+
+    // 트리를 중위 순회하여 출력하는 함수
+    void inorder() const {
+        inorder(root);
+        std::cout << std::endl;
+    }
+
+    // 트리를 삭제하는 함수
+    void clear() {
+        clear(root);
+        root = nullptr;
     }
 };
 
-int main(int argc, char **argv) {
-    BST<int> tree;
-    char command;
-    int key;
+int main() {
+    BST tree;
 
-    while (std::cin >> command >> key) {
-        bool display_tree = true; // Flag to control whether to display tree or not
-        switch (command) {
-            case 'i':
-                if (!tree.insertBST(key)) {
-                    std::cerr << "i " << key << ": The key already exists" << std::endl;
-                    display_tree = false; // Suppress tree display on duplicate insert
-                }
-                break;
-            case 'd':
-                if (!tree.deleteBST(key)) {
-                    std::cerr << "d " << key << ": The key does not exist" << std::endl;
-                    display_tree = false; // Suppress tree display on non-existing delete
-                }
-                if (tree.is_empty()) {
-                    display_tree = false; // Suppress tree display if tree is now empty
-                }
-                break;
-            default:
-                std::cerr << "Invalid command: " << command << std::endl;
-                return 1;
-        }
-        
-        // If tree should be displayed, output tree structure; otherwise, just a newline if the tree is empty.
-        if (display_tree) {
-            std::cout << tree << std::endl;
-        } else if (tree.is_empty()) {
-            std::cout << std::endl;
-        }
-    }
+    // 삽입 테스트
+    tree.insertBST(25);
+    tree.insertBST(15);
+    tree.insertBST(50);
+    tree.insertBST(10);
+    tree.insertBST(22);
+
+    std::cout << "Inorder traversal: ";
+    tree.inorder(); // Expected output: 10 15 22 25 50
+
+    // 삭제 테스트
+    tree.eraseBST(15);
+    std::cout << "After deleting 15: ";
+    tree.inorder(); // Expected output: 10 22 25 50
+
+    // 높이와 크기 테스트
+    std::cout << "Tree height: " << tree.height() << std::endl;
+    std::cout << "Tree size: " << tree.size() << std::endl;
+
+    // 최소/최대 노드 테스트
+    std::cout << "Min node: " << tree.minNode()->key << std::endl;
+    std::cout << "Max node: " << tree.maxNode()->key << std::endl;
+
+    // 트리 삭제 테스트
+    tree.clear();
+    std::cout << "Tree cleared. Inorder traversal: ";
+    tree.inorder(); // Expected output: (empty)
 
     return 0;
 }
