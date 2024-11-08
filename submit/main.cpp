@@ -13,9 +13,10 @@ public:
     __key_type __key_;
     __node_pointer_type __left_;
     __node_pointer_type __right_;
+    int height_;
 
-    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr) {}
-    Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr) {}
+    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr), height_(1) {}
+    Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr), height_(1) {}
 
     friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
         if (np) {
@@ -31,138 +32,137 @@ public:
     }
 };
 
-template <class _NodePtr>
-unsigned __height(_NodePtr __x) {
-    if (!__x) return 0;
-    return 1 + std::max(__height(__x->__left_), __height(__x->__right_));
-}
-
-template <class _NodePtr>
-unsigned __size(_NodePtr __x) {
-    if (!__x) return 0;
-    return 1 + __size(__x->__left_) + __size(__x->__right_);
-}
-
-template <class _NodePtr>
-_NodePtr __tree_min(_NodePtr __x) {
-    while (__x && __x->__left_) {
-        __x = __x->__left_;
-    }
-    return __x;
-}
-
-template <class _NodePtr>
-_NodePtr __tree_max(_NodePtr __x) {
-    while (__x && __x->__right_) {
-        __x = __x->__right_;
-    }
-    return __x;
-}
-
-template <class _NodePtr>
-void __inorder(_NodePtr __x) {
-    if (__x) {
-        __inorder(__x->__left_);
-        std::cout << __x->__key_ << " ";
-        __inorder(__x->__right_);
-    }
-}
-
-template <class _NodePtr, class _Tp>
-std::pair<_NodePtr, bool> __insertBST(_NodePtr& __root, const _Tp& key) {
-    if (!__root) {
-        __root = new Node<_Tp>(key);
-        return { __root, true };
-    }
-    if (key < __root->__key_) {
-        return __insertBST(__root->__left_, key);
-    } else if (key > __root->__key_) {
-        return __insertBST(__root->__right_, key);
-    }
-    return { __root, false }; // Key already exists
-}
-
-template <class _NodePtr, class _Tp>
-_NodePtr __eraseBST(_NodePtr& __root, const _Tp& key) {
-    if (!__root) return nullptr;
-
-    if (key < __root->__key_) {
-        __root->__left_ = __eraseBST(__root->__left_, key);
-    } else if (key > __root->__key_) {
-        __root->__right_ = __eraseBST(__root->__right_, key);
-    } else {
-        if (!__root->__left_) {
-            _NodePtr temp = __root->__right_;
-            delete __root;
-            __root = temp;
-        } else if (!__root->__right_) {
-            _NodePtr temp = __root->__left_;
-            delete __root;
-            __root = temp;
-        } else {
-            _NodePtr temp = __tree_min(__root->__right_);
-            __root->__key_ = temp->__key_;
-            __root->__right_ = __eraseBST(__root->__right_, temp->__key_);
-        }
-    }
-    return __root;
-}
-
-template <class _NodePtr>
-void __clear(_NodePtr& __x) {
-    if (__x) {
-        __clear(__x->__left_);
-        __clear(__x->__right_);
-        delete __x;
-        __x = nullptr;
-    }
-}
-
 template <class _Tp>
 class BST {
 public:
     typedef _Tp key_type;
-    typedef std::size_t size_type;
     typedef Node<key_type>* pointer;
-    typedef const Node<key_type>* const_pointer;
 
 private:
     pointer __root_;
 
+    pointer getBSTNode(const key_type& key) {
+        return new Node<key_type>(key);
+    }
+
+    void updateHeight(pointer node) {
+        if (node) {
+            int leftHeight = node->__left_ ? node->__left_->height_ : 0;
+            int rightHeight = node->__right_ ? node->__right_->height_ : 0;
+            node->height_ = 1 + std::max(leftHeight, rightHeight);
+        }
+    }
+
 public:
     BST() : __root_(nullptr) {}
 
-    size_type height() const {
-        return __height(__root_);
-    }
+    bool insertBST(key_type newKey) {
+        pointer p = __root_;
+        pointer q = nullptr;
+        std::stack<pointer> nodeStack;
 
-    size_type size() const {
-        return __size(__root_);
-    }
+        while (p != nullptr) {
+            if (newKey == p->__key_) {
+                return false; // newKey already exists
+            }
 
-    void inorder() const {
-        __inorder(__root_);
-        std::cout << std::endl;
-    }
+            q = p;
+            nodeStack.push(q);
 
-    std::pair<const_pointer, bool> insert(const key_type& key) {
-        auto result = __insertBST(__root_, key);
-        if (!result.second) {
-            std::cerr << "i " << key << ": The key already exists" << std::endl;
+            if (newKey < p->__key_) {
+                p = p->__left_;
+            } else {
+                p = p->__right_;
+            }
         }
-        return result;
-    }
 
-    const_pointer erase(const key_type& key) {
-        pointer __r = __eraseBST(__root_, key);
-        if (__r == nullptr) {
-            std::cerr << "d " << key << ": The key does not exist" << std::endl;
+        // Create new node
+        pointer newNode = getBSTNode(newKey);
+
+        if (q == nullptr) {
+            __root_ = newNode; // Tree was empty, set root
+        } else if (newKey < q->__key_) {
+            q->__left_ = newNode;
+        } else {
+            q->__right_ = newNode;
         }
-        return __root_;
+
+        // Update height while popping parent node from stack
+        while (!nodeStack.empty()) {
+            q = nodeStack.top();
+            nodeStack.pop();
+            updateHeight(q);
+        }
+
+        return true;
     }
 
-    void clear() {
-        __clear(__root_);
+    bool deleteBST(key_type deleteKey) {
+        pointer p = __root_;
+        pointer q = nullptr;
+        std::stack<pointer> nodeStack;
+
+        while (p != nullptr && deleteKey != p->__key_) {
+            q = p;
+            nodeStack.push(q);
+
+            if (deleteKey < p->__key_) {
+                p = p->__left_;
+            } else {
+                p = p->__right_;
+            }
+        }
+
+        if (p == nullptr) {
+            return false; // deleteKey was not found
+        }
+
+        if (p->__left_ != nullptr && p->__right_ != nullptr) {
+            nodeStack.push(p);
+            pointer tempNode = p;
+
+            if (p->__left_->height_ <= p->__right_->height_) {
+                p = p->__right_;
+                while (p->__left_ != nullptr) {
+                    nodeStack.push(p);
+                    p = p->__left_;
+                }
+            } else {
+                p = p->__left_;
+                while (p->__right_ != nullptr) {
+                    nodeStack.push(p);
+                    p = p->__right_;
+                }
+            }
+            tempNode->__key_ = p->__key_;
+            q = nodeStack.top();
+        }
+
+        // Now degree of p is 0 or 1
+        pointer child = (p->__left_ != nullptr) ? p->__left_ : p->__right_;
+
+        if (q == nullptr) {
+            __root_ = child; // Deleting root node
+        } else if (q->__left_ == p) {
+            q->__left_ = child;
+        } else {
+            q->__right_ = child;
+        }
+
+        delete p;
+
+        // Update height while popping parent nodes from stack
+        while (!nodeStack.empty()) {
+            q = nodeStack.top();
+            nodeStack.pop();
+            updateHeight(q);
+        }
+
+        return true;
+    }
+
+    bool is_empty() const {
+        return __root_ == nullptr;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
@@ -180,24 +180,32 @@ int main(int argc, char **argv) {
         bool display_tree = true; // Flag to control whether to display tree or not
         switch (command) {
             case 'i':
-                if (!tree.insert(key).second) {
+                if (!tree.insertBST(key)) {
+                    std::cerr << "i " << key << ": The key already exists" << std::endl;
                     display_tree = false; // Suppress tree display on duplicate insert
                 }
                 break;
             case 'd':
-                if (tree.erase(key) == nullptr) {
+                if (!tree.deleteBST(key)) {
+                    std::cerr << "d " << key << ": The key does not exist" << std::endl;
                     display_tree = false; // Suppress tree display on non-existing delete
+                }
+                if (tree.is_empty()) {
+                    display_tree = false; // Suppress tree display if tree is now empty
                 }
                 break;
             default:
                 std::cerr << "Invalid command: " << command << std::endl;
                 return 1;
         }
+        
+        // If tree should be displayed, output tree structure; otherwise, just a newline if the tree is empty.
         if (display_tree) {
             std::cout << tree << std::endl;
+        } else if (tree.is_empty()) {
+            std::cout << std::endl;
         }
     }
 
-    tree.clear();
     return 0;
 }
