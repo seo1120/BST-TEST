@@ -1,6 +1,4 @@
 #include <iostream>
-#include <algorithm>  // std::max
-#include <memory>     // std::unique_ptr
 
 template <class _Tp> class Node;
 template <class _Tp> class BST;
@@ -15,8 +13,8 @@ public:
     __node_pointer_type __left_;
     __node_pointer_type __right_;
 
-    Node() : __key_(__key_type()), __left_(NULL), __right_(NULL) {}
-    explicit Node(const __key_type& key) : __key_(key), __left_(NULL), __right_(NULL) {}
+    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr) {}
+    explicit Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr) {}
 
     friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
         if (np) {
@@ -32,10 +30,16 @@ public:
     }
 };
 
+// std::max를 대체하는 사용자 정의 함수
+template <class _Tp>
+_Tp max(_Tp a, _Tp b) {
+    return (a > b) ? a : b;
+}
+
 template <class _NodePtr>
 unsigned __height(_NodePtr __x) {
     if (!__x) return 0;
-    return 1 + std::max(__height(__x->__left_), __height(__x->__right_));
+    return 1 + max(__height(__x->__left_), __height(__x->__right_));
 }
 
 template <class _NodePtr>
@@ -87,7 +91,7 @@ template <class _NodePtr, class _Tp>
 _NodePtr __eraseBST(_NodePtr& __root, const _Tp& key, bool& display_tree) {
     if (!__root) {
         display_tree = false;
-        return NULL;
+        return nullptr;
     }
 
     if (key < __root->__key_) {
@@ -127,7 +131,7 @@ void __clear(_NodePtr& __x) {
         __clear(__x->__left_);
         __clear(__x->__right_);
         delete __x;
-        __x = NULL;
+        __x = nullptr;
     }
 }
 
@@ -144,17 +148,13 @@ private:
     bool display_tree;
 
 public:
-    BST() : __root_(NULL), display_tree(true) {}
+    BST() : __root_(nullptr), display_tree(true) {}
 
     size_type height() const {
         return __height(__root_);
     }
 
     size_type size() const {
-        return __size(__root_);
-    }
-
-    size_type cnt() const {
         return __size(__root_);
     }
 
@@ -178,7 +178,7 @@ public:
             std::cerr << "d " << key << ": The key does not exist" << std::endl;
             display_tree = false;
         } else {
-            display_tree = (__root_ != NULL);
+            display_tree = (__root_ != nullptr);
         }
 
         return __root_;
@@ -222,7 +222,7 @@ int main() {
                 break;
 
             case 'd':
-                if (tree.erase(key) == NULL) {
+                if (tree.erase(key) == nullptr) {
                     tree.set_display_tree(false);
                 }
                 if (tree.get_display_tree()) {
