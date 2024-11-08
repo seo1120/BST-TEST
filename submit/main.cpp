@@ -95,14 +95,14 @@ public:
 
         if (!current) return false; // 삭제할 키가 존재하지 않음
 
-        // 자식이 두 개인 경우
+        // 자식이 두 개인 경우, 왼쪽 서브트리의 최대값으로 대체
         if (current->left && current->right) {
-            Node* successor = current->right;
+            Node* successor = current->left;
             Node* successorParent = current;
 
-            while (successor->left) {
+            while (successor->right) {
                 successorParent = successor;
-                successor = successor->left;
+                successor = successor->right;
             }
 
             current->key = successor->key;
@@ -114,7 +114,7 @@ public:
         Node* child = (current->left) ? current->left : current->right;
 
         if (!parent) {
-            root = child;
+            root = child;  // 루트를 삭제하는 경우
         } else if (parent->left == current) {
             parent->left = child;
         } else {
