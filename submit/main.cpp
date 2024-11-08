@@ -121,6 +121,7 @@ bool __eraseBST(_NodePtr& __root, const _Tp& key) {
     return true;
 }
 
+// 재귀적으로 모든 노드를 삭제하는 clear 함수
 template <class _NodePtr>
 void __clear(_NodePtr& __x) {
     if (__x) {
@@ -162,7 +163,7 @@ class BST {
         }
 
         void clear() {
-            __clear(__root_);
+            __clear(__root_); // 재귀적으로 모든 노드를 삭제
         }
 
         bool isEmpty() const {
@@ -205,6 +206,6 @@ int main() {
         }
     }
 
-    tree.clear(); // 모든 노드를 삭제하여 메모리 해제
+    tree.clear(); // 프로그램 종료 시 모든 노드를 삭제하여 메모리 해제
     return 0;
 }
