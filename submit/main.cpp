@@ -1,17 +1,203 @@
-/*
-* Dummy file입니다.
-* 본인이 테스트하고 싶은 내용으로 변경 후 사용하세요.
-*/
-
 #include <iostream>
+#include <stack>
 
-int main() {
-	char	command;
-	int		key;
+template <class _Tp> class Node;
+template <class _Tp> class BST;
 
-	while (std::cin >> command >> key) {
-		std::cout << command << " " << key << std::endl;
-	}
+template <class _Tp>
+class Node {
+public:
+    typedef _Tp __key_type;
+    typedef Node<__key_type>* __node_pointer_type;
 
-	return (0);
+    __key_type __key_;
+    __node_pointer_type __left_;
+    __node_pointer_type __right_;
+
+    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr) {}
+    Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
+        if (np) {
+            os << "<";
+            if (np->__left_) os << np->__left_;
+            os << " " << np->__key_ << " ";
+            if (np->__right_) os << np->__right_;
+            os << ">";
+        } else {
+            os << "<>";
+        }
+        return os;
+    }
+};
+
+template <class _NodePtr>
+unsigned __height(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + std::max(__height(__x->__left_), __height(__x->__right_));
+}
+
+template <class _NodePtr>
+unsigned __size(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + __size(__x->__left_) + __size(__x->__right_);
+}
+
+template <class _NodePtr>
+_NodePtr __tree_min(_NodePtr __x) {
+    while (__x && __x->__left_) {
+        __x = __x->__left_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+_NodePtr __tree_max(_NodePtr __x) {
+    while (__x && __x->__right_) {
+        __x = __x->__right_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+void __inorder(_NodePtr __x) {
+    if (__x) {
+        __inorder(__x->__left_);
+        std::cout << __x->__key_ << " ";
+        __inorder(__x->__right_);
+    }
+}
+
+template <class _NodePtr, class _Tp>
+std::pair<_NodePtr, bool> __insertBST(_NodePtr& __root, const _Tp& key) {
+    if (!__root) {
+        __root = new Node<_Tp>(key);
+        return { __root, true };
+    }
+    if (key < __root->__key_) {
+        return __insertBST(__root->__left_, key);
+    } else if (key > __root->__key_) {
+        return __insertBST(__root->__right_, key);
+    }
+    return { __root, false }; // Key already exists
+}
+
+template <class _NodePtr, class _Tp>
+_NodePtr __eraseBST(_NodePtr& __root, const _Tp& key) {
+    if (!__root) return nullptr;
+
+    if (key < __root->__key_) {
+        __root->__left_ = __eraseBST(__root->__left_, key);
+    } else if (key > __root->__key_) {
+        __root->__right_ = __eraseBST(__root->__right_, key);
+    } else {
+        if (!__root->__left_) {
+            _NodePtr temp = __root->__right_;
+            delete __root;
+            __root = temp;
+        } else if (!__root->__right_) {
+            _NodePtr temp = __root->__left_;
+            delete __root;
+            __root = temp;
+        } else {
+            _NodePtr temp = __tree_min(__root->__right_);
+            __root->__key_ = temp->__key_;
+            __root->__right_ = __eraseBST(__root->__right_, temp->__key_);
+        }
+    }
+    return __root;
+}
+
+template <class _NodePtr>
+void __clear(_NodePtr& __x) {
+    if (__x) {
+        __clear(__x->__left_);
+        __clear(__x->__right_);
+        delete __x;
+        __x = nullptr;
+    }
+}
+
+template <class _Tp>
+class BST {
+public:
+    typedef _Tp key_type;
+    typedef std::size_t size_type;
+    typedef Node<key_type>* pointer;
+    typedef const Node<key_type>* const_pointer;
+
+private:
+    pointer __root_;
+
+public:
+    BST() : __root_(nullptr) {}
+
+    size_type height() const {
+        return __height(__root_);
+    }
+
+    size_type size() const {
+        return __size(__root_);
+    }
+
+    void inorder() const {
+        __inorder(__root_);
+        std::cout << std::endl;
+    }
+
+    std::pair<const_pointer, bool> insert(const key_type& key) {
+        auto result = __insertBST(__root_, key);
+        if (!result.second) {
+            std::cerr << "i " << key << ": The key already exists" << std::endl;
+        }
+        return result;
+    }
+
+    const_pointer erase(const key_type& key) {
+        pointer __r = __eraseBST(__root_, key);
+        if (__r == nullptr) {
+            std::cerr << "d " << key << ": The key does not exist" << std::endl;
+        }
+        return __root_;
+    }
+
+    void clear() {
+        __clear(__root_);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
+        os << tree.__root_;
+        return os;
+    }
+};
+
+int main(int argc, char **argv) {
+    BST<int> tree;
+    char command;
+    int key;
+
+    while (std::cin >> command >> key) {
+        bool display_tree = true; // Flag to control whether to display tree or not
+        switch (command) {
+            case 'i':
+                if (!tree.insert(key).second) {
+                    display_tree = false; // Suppress tree display on duplicate insert
+                }
+                break;
+            case 'd':
+                if (tree.erase(key) == nullptr) {
+                    display_tree = false; // Suppress tree display on non-existing delete
+                }
+                break;
+            default:
+                std::cerr << "Invalid command: " << command << std::endl;
+                return 1;
+        }
+        if (display_tree) {
+            std::cout << tree << std::endl;
+        }
+    }
+
+    tree.clear();
+    return 0;
 }
