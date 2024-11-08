@@ -1,21 +1,28 @@
 #include <iostream>
 #include <stack>
 
-// Node 클래스
+template <class _Tp> class Node;
+template <class _Tp> class BST;
+
+template <class _Tp>
 class Node {
 public:
-    int key;        // 키 값
-    Node* left;     // 왼쪽 자식 노드
-    Node* right;    // 오른쪽 자식 노드
+    typedef _Tp __key_type;
+    typedef Node<__key_type>* __node_pointer_type;
 
-    Node(int key) : key(key), left(nullptr), right(nullptr) {}
+    __key_type __key_;
+    __node_pointer_type __left_;
+    __node_pointer_type __right_;
 
-    friend std::ostream& operator<<(std::ostream& os, const Node* node) {
-        if (node) {
+    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr) {}
+    Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
+        if (np) {
             os << "<";
-            if (node->left) os << node->left;
-            os << " " << node->key << " ";
-            if (node->right) os << node->right;
+            if (np->__left_) os << np->__left_;
+            os << " " << np->__key_ << " ";
+            if (np->__right_) os << np->__right_;
             os << ">";
         } else {
             os << "<>";
@@ -24,178 +31,187 @@ public:
     }
 };
 
-// getNodeBST 함수: 새 노드를 생성하는 함수
-Node* getNodeBST(int key) {
-    return new Node(key);
+template <class _NodePtr>
+unsigned __height(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + std::max(__height(__x->__left_), __height(__x->__right_));
 }
 
-// BST 클래스
-class BST {
-private:
-    Node* root;
+template <class _NodePtr>
+unsigned __size(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + __size(__x->__left_) + __size(__x->__right_);
+}
 
-    // 트리의 노드를 재귀적으로 삭제하는 함수
-    void clear(Node* node) {
-        if (node) {
-            clear(node->left);
-            clear(node->right);
-            delete node;
+template <class _NodePtr>
+_NodePtr __tree_min(_NodePtr __x) {
+    while (__x && __x->__left_) {
+        __x = __x->__left_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+_NodePtr __tree_max(_NodePtr __x) {
+    while (__x && __x->__right_) {
+        __x = __x->__right_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+void __inorder(_NodePtr __x) {
+    if (__x) {
+        __inorder(__x->__left_);
+        std::cout << __x->__key_ << " ";
+        __inorder(__x->__right_);
+    }
+}
+
+template <class _NodePtr, class _Tp>
+std::pair<_NodePtr, bool> __insertBST(_NodePtr& __root, const _Tp& key) {
+    if (!__root) {
+        __root = new Node<_Tp>(key);
+        return { __root, true };
+    }
+    if (key < __root->__key_) {
+        return __insertBST(__root->__left_, key);
+    } else if (key > __root->__key_) {
+        return __insertBST(__root->__right_, key);
+    }
+    return { __root, false }; // Key already exists
+}
+
+template <class _NodePtr, class _Tp>
+_NodePtr __eraseBST(_NodePtr& __root, const _Tp& key) {
+    if (!__root) return nullptr;
+
+    if (key < __root->__key_) {
+        __root->__left_ = __eraseBST(__root->__left_, key);
+    } else if (key > __root->__key_) {
+        __root->__right_ = __eraseBST(__root->__right_, key);
+    } else {
+        // 삭제할 노드를 찾은 경우
+        if (!__root->__left_) {
+            // 왼쪽 자식이 없으면 오른쪽 자식으로 대체
+            _NodePtr temp = __root->__right_;
+            delete __root;
+            __root = temp;
+        } else if (!__root->__right_) {
+            // 오른쪽 자식이 없으면 왼쪽 자식으로 대체
+            _NodePtr temp = __root->__left_;
+            delete __root;
+            __root = temp;
+        } else {
+            // 양쪽 자식이 모두 있을 경우, 왼쪽 서브트리에서 가장 큰 값을 찾아서
+            // 그 값을 현재 노드에 복사하고, 그 값을 삭제
+            _NodePtr temp = __tree_max(__root->__left_);
+            __root->__key_ = temp->__key_;  // 현재 노드에 복사
+            __root->__left_ = __eraseBST(__root->__left_, temp->__key_);  // 왼쪽 서브트리에서 해당 노드를 삭제
         }
     }
+
+    return __root;
+}
+
+template <class _NodePtr>
+void __clear(_NodePtr& __x) {
+    if (__x) {
+        __clear(__x->__left_);
+        __clear(__x->__right_);
+        delete __x;
+        __x = nullptr;
+    }
+}
+
+template <class _Tp>
+class BST {
+public:
+    typedef _Tp key_type;
+    typedef std::size_t size_type;
+    typedef Node<key_type>* pointer;
+    typedef const Node<key_type>* const_pointer;
+
+private:
+    pointer __root_;
 
 public:
-    // 생성자
-    BST() : root(nullptr) {}
+    BST() : __root_(nullptr) {}
 
-    // 소멸자
-    ~BST() {
-        clear();
+    size_type height() const {
+        return __height(__root_);
     }
 
-    // 삽입 함수
-    bool insertBST(int key) {
-        Node* newNode = getNodeBST(key);
-        if (!root) {
-            root = newNode;
-            return true;
-        }
-
-        Node* current = root;
-        Node* parent = nullptr;
-
-        while (current) {
-            parent = current;
-            if (key == current->key) {
-                delete newNode; // 이미 존재하는 키 값이면 새 노드 삭제
-                return false;
-            } else if (key < current->key) {
-                current = current->left;
-            } else {
-                current = current->right;
-            }
-        }
-
-        if (key < parent->key) {
-            parent->left = newNode;
-        } else {
-            parent->right = newNode;
-        }
-        return true;
+    size_type size() const {
+        return __size(__root_);
     }
 
-    // 삭제 함수
-    bool eraseBST(int key) {
-        Node* current = root;
-        Node* parent = nullptr;
-
-        // 삭제할 노드를 찾는다.
-        while (current && current->key != key) {
-            parent = current;
-            if (key < current->key) {
-                current = current->left;
-            } else {
-                current = current->right;
-            }
-        }
-
-        if (!current) return false; // 삭제할 키가 존재하지 않음
-
-        // 자식이 두 개인 경우
-        if (current->left && current->right) {
-            Node* successor = current->right;
-            Node* successorParent = current;
-
-            while (successor->left) {
-                successorParent = successor;
-                successor = successor->left;
-            }
-
-            current->key = successor->key;
-            current = successor;
-            parent = successorParent;
-        }
-
-        // 자식이 없거나 하나인 경우
-        Node* child = (current->left) ? current->left : current->right;
-
-        if (!parent) {
-            root = child;
-        } else if (parent->left == current) {
-            parent->left = child;
-        } else {
-            parent->right = child;
-        }
-
-        delete current;
-        return true;
+    size_type cnt() const {
+        return __size(__root_);
     }
 
-    // 트리를 중위 순회하여 출력하는 함수
     void inorder() const {
-        inorder(root);
+        __inorder(__root_);
         std::cout << std::endl;
     }
 
-    // 중위 순회 함수
-    void inorder(Node* node) const {
-        if (node) {
-            inorder(node->left);
-            std::cout << node->key << " ";
-            inorder(node->right);
+    std::pair<const_pointer, bool> insert(const key_type& key) {
+        auto result = __insertBST(__root_, key);
+        if (!result.second) {
+            std::cerr << "i " << key << ": The key already exists" << std::endl;
         }
+        return result;
     }
 
-    // 트리를 삭제하는 함수
+    const_pointer erase(const key_type& key) {
+        pointer __r = __eraseBST(__root_, key);
+        if (__r == nullptr && cnt() != 0) {
+            std::cerr << "d " << key << ": The key does not exist. Current count of nodes: " << cnt() << std::endl;
+        }
+        return __root_;
+    }
+
     void clear() {
-        clear(root);
-        root = nullptr;
-    }
-
-    bool is_empty() const {
-        return root == nullptr;
+        __clear(__root_);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
-        os << tree.root;
+        if  (tree.__root_ == nullptr) {
+            os << "<>";  // 비어있는 트리는 "<>" 출력
+        } else {
+            os << tree.__root_;
+        }
         return os;
     }
 };
 
-int main() {
-    BST tree;
+int main(int argc, char **argv) {
+    BST<int> tree;
     char command;
     int key;
 
     while (std::cin >> command >> key) {
         bool display_tree = true; // Flag to control whether to display tree or not
-        bool was_empty = tree.is_empty();
-
         switch (command) {
             case 'i':
-                if (!tree.insertBST(key)) {
-                    std::cerr << "i " << key << ": The key already exists" << std::endl;
+                if (!tree.insert(key).second) {
                     display_tree = false; // Suppress tree display on duplicate insert
                 }
                 break;
             case 'd':
-                if (!tree.eraseBST(key)) {
-                    std::cerr << "d " << key << ": The key does not exist";
+                if (tree.erase(key) == nullptr) {
                     display_tree = false; // Suppress tree display on non-existing delete
-                } else if (tree.is_empty()) {
-                    display_tree = false; // Suppress tree display if tree is now empty
-                    std::cout << std::endl; // Only add newline if the tree is now empty after deletion
                 }
                 break;
             default:
                 std::cerr << "Invalid command: " << command << std::endl;
                 return 1;
         }
-        
-        // If tree should be displayed, output tree structure
-        if (display_tree && !tree.is_empty()) {
+        if (display_tree) {
             std::cout << tree << std::endl;
         }
     }
 
+    tree.clear();
     return 0;
 }
