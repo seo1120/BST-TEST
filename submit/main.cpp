@@ -9,160 +9,164 @@ struct Node {
     Node(int k) : key(k), left(nullptr), right(nullptr) {}
 };
 
-// BST 클래스
 class BST {
 private:
     Node* root;
 
-    // 새로운 노드를 생성하는 함수 (조건에 따라 정의)
-    Node* getNodeBST(int key) {
-        return new Node(key);
+    // 두 개의 정수 중 더 큰 값을 반환하는 함수
+    int max(int a, int b) {
+        return (a > b) ? a : b;
     }
 
-    // 서브트리의 높이를 재귀적으로 계산하는 함수
-    int height(Node* T) {
-        if (T == nullptr) return 0;
-        int leftHeight = height(T->left);
-        int rightHeight = height(T->right);
-        return 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+    int Height(Node* node) {
+        if (node == nullptr) return 0;
+        return 1 + max(Height(node->left), Height(node->right));
     }
 
-    // 서브트리의 크기를 재귀적으로 계산하는 함수
-    int size(Node* T) {
-        if (T == nullptr) return 0;
-        return 1 + size(T->left) + size(T->right);
+    int Size(Node* node) {
+        if (node == nullptr) return 0;
+        return 1 + Size(node->left) + Size(node->right);
     }
 
-    // 왼쪽 서브트리에서 가장 큰 노드 찾기
-    Node* maxNode(Node* T) {
-        while (T && T->right) {
-            T = T->right;
-        }
-        return T;
-    }
-
-    // 오른쪽 서브트리에서 가장 작은 노드 찾기
-    Node* minNode(Node* T) {
-        while (T && T->left) {
-            T = T->left;
-        }
-        return T;
-    }
-
-    // 노드를 삽입하는 함수 (조건에 맞춰 구현)
+    // insertBST 함수 구현 (같은 값이 있으면 오류 출력)
     bool insertBST(Node*& T, int newKey) {
         if (T == nullptr) {
-            T = getNodeBST(newKey);
+            T = new Node(newKey);
             return true;
         }
+
         if (newKey < T->key) {
             return insertBST(T->left, newKey);
         } else if (newKey > T->key) {
             return insertBST(T->right, newKey);
         } else {
-            std::cerr << "i " << newKey << ": The key already exists" << std::endl;
+            std::cout << "i " << newKey << ": The key already exists" << std::endl;
             return false;
         }
     }
 
-    // 노드를 삭제하는 함수 (조건에 맞춰 구현)
-    bool eraseBST(Node*& T, int deleteKey) {
-        if (T == nullptr) {
-            std::cerr << "d " << deleteKey << ": The key does not exist" << std::endl;
+    // 오른쪽 서브트리에서 가장 작은 노드 찾기
+    Node* findMinInRightSubtree(Node* node) {
+        while (node && node->left) {
+            node = node->left;
+        }
+        return node;
+    }
+
+    // 왼쪽 서브트리에서 가장 큰 노드 찾기
+    Node* findMaxInLeftSubtree(Node* node) {
+        while (node && node->right) {
+            node = node->right;
+        }
+        return node;
+    }
+
+    // deleteBST 함수 구현 (자식 노드를 올바르게 삭제하고, 메모리 누수 방지)
+    bool deleteBST(Node*& node, int deleteKey, bool& success) {
+        if (node == nullptr) {
+            std::cout << "d " << deleteKey << ": The key does not exist" << std::endl;
+            success = false;
             return false;
         }
 
-        if (deleteKey < T->key) {
-            return eraseBST(T->left, deleteKey);
-        } else if (deleteKey > T->key) {
-            return eraseBST(T->right, deleteKey);
+        if (deleteKey < node->key) {
+            return deleteBST(node->left, deleteKey, success);
+        } else if (deleteKey > node->key) {
+            return deleteBST(node->right, deleteKey, success);
         } else {
-            // 자식 노드가 없는 경우
-            if (T->left == nullptr && T->right == nullptr) {
-                delete T;
-                T = nullptr;
-            }
-            // 하나의 자식 노드가 있는 경우
-            else if (T->left == nullptr) {
-                Node* temp = T;
-                T = T->right;
+            if (node->left == nullptr && node->right == nullptr) {
+                delete node;
+                node = nullptr;
+            } else if (node->left == nullptr) {
+                Node* temp = node;
+                node = node->right;
                 delete temp;
-            } else if (T->right == nullptr) {
-                Node* temp = T;
-                T = T->left;
+            } else if (node->right == nullptr) {
+                Node* temp = node;
+                node = node->left;
                 delete temp;
-            }
-            // 두 개의 자식 노드가 있는 경우
-            else {
-                int leftHeight = height(T->left);
-                int rightHeight = height(T->right);
-                if (leftHeight > rightHeight || (leftHeight == rightHeight && size(T->left) >= size(T->right))) {
-                    Node* maxInLeft = maxNode(T->left);
-                    T->key = maxInLeft->key;
-                    eraseBST(T->left, maxInLeft->key);
+            } else {
+                int leftheight = Height(node->left);
+                int rightheight = Height(node->right);
+                Node* temp = nullptr;
+
+                if (leftheight == rightheight) {
+                    if (Size(node->left) >= Size(node->right)) {
+                        temp = findMaxInLeftSubtree(node->left);
+                        node->key = temp->key;
+                        deleteBST(node->left, temp->key, success);
+                    } else {
+                        temp = findMinInRightSubtree(node->right);
+                        node->key = temp->key;
+                        deleteBST(node->right, temp->key, success);
+                    }
+                } else if (leftheight < rightheight) {
+                    temp = findMinInRightSubtree(node->right);
+                    node->key = temp->key;
+                    deleteBST(node->right, temp->key, success);
                 } else {
-                    Node* minInRight = minNode(T->right);
-                    T->key = minInRight->key;
-                    eraseBST(T->right, minInRight->key);
+                    temp = findMaxInLeftSubtree(node->left);
+                    node->key = temp->key;
+                    deleteBST(node->left, temp->key, success);
                 }
             }
-            return true;
         }
+
+        success = true;
+        return true;
     }
 
-    // 트리의 inorder 순회를 구현 (조건에 따라)
-    void inorder(Node* T) {
-        if (T != nullptr) {
-            std::cout << "<";
-            if (T->left) {
-                inorder(T->left);
-            }
-            std::cout << " " << T->key << " ";
-            if (T->right) {
-                inorder(T->right);
-            }
-            std::cout << ">";
-        }
-    }
+    void printTree(Node* node, std::ostream& os) {
+        if (node == nullptr) return;
 
-    // 트리를 삭제하는 함수
-    void clear(Node*& T) {
-        if (T != nullptr) {
-            clear(T->left);
-            clear(T->right);
-            delete T;
-            T = nullptr;
+        if (node->left != nullptr) {
+            os << "<";
+            printTree(node->left, os);
+            os << ">";
+        }
+
+        os << " " << node->key << " ";
+
+        if (node->right != nullptr) {
+            os << "<";
+            printTree(node->right, os);
+            os << ">";
         }
     }
 
 public:
     BST() : root(nullptr) {}
 
-    // 삽입 함수 (외부 인터페이스)
-    void insert(int key) {
-        if (insertBST(root, key)) {
-            std::cout << "<";
-            inorder(root);
-            std::cout << ">" << std::endl;
-        }
+    bool insert(int key) {
+        return insertBST(root, key);
     }
 
-    // 삭제 함수 (외부 인터페이스)
-    void erase(int key) {
-        if (eraseBST(root, key)) {
-            if (root != nullptr) {
-                std::cout << "<";
-                inorder(root);
-                std::cout << ">" << std::endl;
-            } else {
-                std::cout << std::endl;  // 트리가 비어 있을 경우 빈 줄 출력
-            }
-        }
+    bool deleteKey(int key) {
+        bool success = false;
+        deleteBST(root, key, success);
+        return success;
     }
 
-    // 트리 전체를 삭제하는 함수
+    friend std::ostream& operator<<(std::ostream& os, BST& tree) {
+        tree.printTree(tree.root, os);
+        return os;
+    }
+
+    Node* getRoot() const {
+        return root;
+    }
+
     void clear() {
         clear(root);
+    }
+
+private:
+    void clear(Node*& node) {
+        if (node == nullptr) return;
+        clear(node->left);
+        clear(node->right);
+        delete node;
+        node = nullptr;
     }
 };
 
@@ -172,16 +176,30 @@ int main() {
     int key;
 
     while (std::cin >> command >> key) {
-        if (command == 'i') {
-            tree.insert(key);
-        } else if (command == 'd') {
-            tree.erase(key);
-        } else {
-            std::cerr << "Invalid command: " << command << std::endl;
-            return 1;
+        switch (command) {
+            case 'i': {
+                if (tree.insert(key)) {
+                    std::cout << "<";
+                    std::cout << tree;
+                    std::cout << ">" << std::endl;
+                }
+                break;
+            }
+
+            case 'd': {
+                if (tree.deleteKey(key)) {
+                    if (tree.getRoot() != nullptr) {
+                        std::cout << "<";
+                        std::cout << tree;
+                        std::cout << ">" << std::endl;
+                    } else {
+                        std::cout << std::endl;
+                    }
+                }
+                break;
+            }
         }
     }
-
     tree.clear();
     return 0;
 }
