@@ -28,6 +28,7 @@ private:
 
     bool insertBST(Node*& T, int newKey) {
         if (T == nullptr) {
+            // getNodeBST() 함수 대신 쓰겠습니다.
             T = new Node(newKey);
             return true;
         }
@@ -43,23 +44,23 @@ private:
         }
     }
 
-    // 오른쪽 서브트리에서 가장 작은 노드
+    // 오른쪽에서 가장 작은 거
     Node* minInRight(Node* node) {
-        while (node && node->left) {
+        while (node && node->left) { // 왼쪽만 봐도 됨
             node = node->left;
         }
         return node;
     }
 
-    // 왼쪽 서브트리에서 가장 큰 노드
+    // 왼쪽에서 가장 큰 거
     Node* maxInLeft(Node* node) {
-        while (node && node->right) {
+        while (node && node->right) { // 오른쪽만 봐도 됨
             node = node->right;
         }
         return node;
     }
 
-    bool deleteBST(Node*& node, int deleteKey, bool& success) {
+    bool eraseBST(Node*& node, int deleteKey, bool& success) {
         if (node == nullptr) {
             // 없는 경우 계속 타고 들어가다보며 없을 시 
             std::cout << "d " << deleteKey << ": The key does not exist" << std::endl;
@@ -68,9 +69,9 @@ private:
         }
 
         if (deleteKey < node->key) {
-            return deleteBST(node->left, deleteKey, success);
+            return eraseBST(node->left, deleteKey, success);
         } else if (deleteKey > node->key) {
-            return deleteBST(node->right, deleteKey, success);
+            return eraseBST(node->right, deleteKey, success);
         } else {
             if (node->left == nullptr && node->right == nullptr) {
                 delete node;
@@ -92,20 +93,20 @@ private:
                     if (size(node->left) >= size(node->right)) {
                         temp = maxInLeft(node->left);
                         node->key = temp->key;
-                        deleteBST(node->left, temp->key, success);
+                        eraseBST(node->left, temp->key, success);
                     } else {
                         temp = minInRight(node->right);
                         node->key = temp->key;
-                        deleteBST(node->right, temp->key, success);
+                        eraseBST(node->right, temp->key, success);
                     }
                 } else if (leftHeight < rightHeight) {
                     temp = minInRight(node->right);
                     node->key = temp->key;
-                    deleteBST(node->right, temp->key, success);
+                    eraseBST(node->right, temp->key, success);
                 } else {
                     temp = maxInLeft(node->left);
                     node->key = temp->key;
-                    deleteBST(node->left, temp->key, success);
+                    eraseBST(node->left, temp->key, success);
                 }
             }
         }
@@ -114,12 +115,12 @@ private:
         return true;
     }
 
-    void printTree(Node* node, std::ostream& os) {
+    void inorderTree(Node* node, std::ostream& os) {
         if (node == nullptr) return;
         // 왼쪽
         if (node->left != nullptr) {
             os << "<";
-            printTree(node->left, os);
+            inorderTree(node->left, os);
             os << ">";
         }
 
@@ -128,7 +129,7 @@ private:
         // 오른쪽
         if (node->right != nullptr) {
             os << "<";
-            printTree(node->right, os);
+            inorderTree(node->right, os);
             os << ">";
         }
     }
@@ -140,14 +141,14 @@ public:
         return insertBST(root, key);
     }
 
-    bool deleteKey(int key) {
-        bool success = false;
-        deleteBST(root, key, success);
+    bool erase(int key) {
+        bool success = false; // 재귀를 사용해서 끝까지 확인해도 마지막 리턴할때는 재귀의 첫번째니까 플래그 생성
+        eraseBST(root, key, success);
         return success;
     }
 
     friend std::ostream& operator<<(std::ostream& os, BST& tree) {
-        tree.printTree(tree.root, os);
+        tree.inorderTree(tree.root, os);
         return os;
     }
 
@@ -188,7 +189,7 @@ int main() {
             }
 
             case 'd': {
-                if (tree.deleteKey(key)) {
+                if (tree.erase(key)) {
                     if (tree.getRoot() != nullptr) {
                         std::cout << "<";
                         std::cout << tree;
