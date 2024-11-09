@@ -1,6 +1,5 @@
 #include <iostream>
 
-// BST 노드 구조체 정의
 struct Node {
     int key;
     Node* left;
@@ -13,7 +12,6 @@ class BST {
 private:
     Node* root;
 
-    // 두 개의 정수 중 더 큰 값을 반환하는 함수
     int max(int a, int b) {
         return (a > b) ? a : b;
     }
@@ -28,7 +26,6 @@ private:
         return 1 + Size(node->left) + Size(node->right);
     }
 
-    // insertBST 함수 구현 (같은 값이 있으면 오류 출력)
     bool insertBST(Node*& T, int newKey) {
         if (T == nullptr) {
             T = new Node(newKey);
@@ -40,30 +37,31 @@ private:
         } else if (newKey > T->key) {
             return insertBST(T->right, newKey);
         } else {
+            // 이미 존재할 경우
             std::cout << "i " << newKey << ": The key already exists" << std::endl;
             return false;
         }
     }
 
-    // 오른쪽 서브트리에서 가장 작은 노드 찾기
-    Node* findMinInRightSubtree(Node* node) {
+    // 오른쪽 서브트리에서 가장 작은 노드
+    Node* minInRight(Node* node) {
         while (node && node->left) {
             node = node->left;
         }
         return node;
     }
 
-    // 왼쪽 서브트리에서 가장 큰 노드 찾기
-    Node* findMaxInLeftSubtree(Node* node) {
+    // 왼쪽 서브트리에서 가장 큰 노드
+    Node* maxInLeft(Node* node) {
         while (node && node->right) {
             node = node->right;
         }
         return node;
     }
 
-    // deleteBST 함수 구현 (자식 노드를 올바르게 삭제하고, 메모리 누수 방지)
     bool deleteBST(Node*& node, int deleteKey, bool& success) {
         if (node == nullptr) {
+            // 없는 경우 계속 타고 들어가다보며 없을 시 
             std::cout << "d " << deleteKey << ": The key does not exist" << std::endl;
             success = false;
             return false;
@@ -92,20 +90,20 @@ private:
 
                 if (leftheight == rightheight) {
                     if (Size(node->left) >= Size(node->right)) {
-                        temp = findMaxInLeftSubtree(node->left);
+                        temp = maxInLeft(node->left);
                         node->key = temp->key;
                         deleteBST(node->left, temp->key, success);
                     } else {
-                        temp = findMinInRightSubtree(node->right);
+                        temp = minInRight(node->right);
                         node->key = temp->key;
                         deleteBST(node->right, temp->key, success);
                     }
                 } else if (leftheight < rightheight) {
-                    temp = findMinInRightSubtree(node->right);
+                    temp = minInRight(node->right);
                     node->key = temp->key;
                     deleteBST(node->right, temp->key, success);
                 } else {
-                    temp = findMaxInLeftSubtree(node->left);
+                    temp = maxInLeft(node->left);
                     node->key = temp->key;
                     deleteBST(node->left, temp->key, success);
                 }
@@ -118,7 +116,7 @@ private:
 
     void printTree(Node* node, std::ostream& os) {
         if (node == nullptr) return;
-
+        // 왼쪽
         if (node->left != nullptr) {
             os << "<";
             printTree(node->left, os);
@@ -127,6 +125,7 @@ private:
 
         os << " " << node->key << " ";
 
+        // 오른쪽
         if (node->right != nullptr) {
             os << "<";
             printTree(node->right, os);
@@ -152,6 +151,7 @@ public:
         return os;
     }
 
+    // 마지막에 제거 시 0개인지 확인
     Node* getRoot() const {
         return root;
     }
@@ -161,6 +161,7 @@ public:
     }
 
 private:
+    // 전부 다 지움
     void clear(Node*& node) {
         if (node == nullptr) return;
         clear(node->left);
@@ -193,7 +194,7 @@ int main() {
                         std::cout << tree;
                         std::cout << ">" << std::endl;
                     } else {
-                        std::cout << std::endl;
+                        std::cout << std::endl; // 개행
                     }
                 }
                 break;
