@@ -84,11 +84,11 @@ private:
                 node = node->left;
                 delete temp;
             } else {
-                int leftheight = Height(node->left);
-                int rightheight = Height(node->right);
+                int leftHeight = Height(node->left);
+                int rightHeight = Height(node->right);
                 Node* temp = nullptr;
 
-                if (leftheight == rightheight) {
+                if (leftHeight == rightHeight) {
                     if (Size(node->left) >= Size(node->right)) {
                         temp = maxInLeft(node->left);
                         node->key = temp->key;
@@ -98,7 +98,7 @@ private:
                         node->key = temp->key;
                         deleteBST(node->right, temp->key, success);
                     }
-                } else if (leftheight < rightheight) {
+                } else if (leftHeight < rightHeight) {
                     temp = minInRight(node->right);
                     node->key = temp->key;
                     deleteBST(node->right, temp->key, success);
