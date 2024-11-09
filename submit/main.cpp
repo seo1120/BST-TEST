@@ -47,6 +47,11 @@ private:
         return 1 + max(__height(node->__left_), __height(node->__right_));
     }
 
+    unsigned __size(pointer node) const {
+        if (!node) return 0;
+        return 1 + __size(node->__left_) + __size(node->__right_);
+    }
+
     pointer __tree_min(pointer node) const {
         while (node && node->__left_) {
             node = node->__left_;
@@ -85,7 +90,7 @@ private:
         } else if (key > root->__key_) {
             root->__right_ = __eraseBST(root->__right_, key, success);
         } else {
-            // Node found
+            // Node with two children
             if (!root->__left_) {
                 pointer temp = root->__right_;
                 delete root;
@@ -95,11 +100,18 @@ private:
                 delete root;
                 root = temp;
             } else {
-                if (__height(root->__left_) >= __height(root->__right_)) {
+                unsigned left_height = __height(root->__left_);
+                unsigned right_height = __height(root->__right_);
+                unsigned left_size = __size(root->__left_);
+                unsigned right_size = __size(root->__right_);
+
+                if (left_height > right_height || (left_height == right_height && left_size >= right_size)) {
+                    // Replace with maximum node from left subtree
                     pointer temp = __tree_max(root->__left_);
                     root->__key_ = temp->__key_;
                     root->__left_ = __eraseBST(root->__left_, temp->__key_, success);
                 } else {
+                    // Replace with minimum node from right subtree
                     pointer temp = __tree_min(root->__right_);
                     root->__key_ = temp->__key_;
                     root->__right_ = __eraseBST(root->__right_, temp->__key_, success);
