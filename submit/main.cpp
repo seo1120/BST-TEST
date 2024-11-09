@@ -173,7 +173,7 @@ public:
 
     const_pointer erase(const key_type& key) {
         bool tempbool = true;
-        pointer __r = __eraseBST(__root_, key, tempbool);
+        __eraseBST(__root_, key, tempbool);
         if (!tempbool) {
             std::cerr << "d " << key << ": The key does not exist" << std::endl;
             display_tree = false;
@@ -199,6 +199,8 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
         if (tree.display_tree && tree.__root_) {
             os << tree.__root_;
+        } else if (!tree.__root_) {
+            os << "<>";
         }
         return os;
     }
@@ -228,7 +230,7 @@ int main() {
                 if (tree.get_display_tree()) {
                     std::cout << tree << std::endl;
                 } else if (!tree.get_display_tree() && tree.size() == 0) {
-                    std::cout << std::endl; // 트리가 비었을 때 개행만 출력
+                    std::cout << "<>" << std::endl; // 트리가 비었을 때 개행과 빈 트리 표시
                 }
                 break;
 
