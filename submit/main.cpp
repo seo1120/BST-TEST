@@ -1,5 +1,4 @@
 #include <iostream>
-#include <stack>
 
 template <class _Tp> class Node;
 template <class _Tp> class BST;
@@ -13,10 +12,9 @@ public:
     __key_type __key_;
     __node_pointer_type __left_;
     __node_pointer_type __right_;
-    unsigned int height;
 
-    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr), height(1) {}
-    explicit Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr), height(1) {}
+    Node() : __key_(__key_type()), __left_(nullptr), __right_(nullptr) {}
+    explicit Node(const __key_type& key) : __key_(key), __left_(nullptr), __right_(nullptr) {}
 
     friend std::ostream& operator<<(std::ostream& os, const __node_pointer_type& np) {
         if (np) {
@@ -32,145 +30,177 @@ public:
     }
 };
 
+// std::max를 대체하는 사용자 정의 함수
+template <class _Tp>
+_Tp max(_Tp a, _Tp b) {
+    return (a > b) ? a : b;
+}
+
+template <class _NodePtr>
+unsigned __height(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + max(__height(__x->__left_), __height(__x->__right_));
+}
+
+template <class _NodePtr>
+unsigned __size(_NodePtr __x) {
+    if (!__x) return 0;
+    return 1 + __size(__x->__left_) + __size(__x->__right_);
+}
+
+template <class _NodePtr>
+_NodePtr __tree_min(_NodePtr __x) {
+    while (__x && __x->__left_) {
+        __x = __x->__left_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+_NodePtr __tree_max(_NodePtr __x) {
+    while (__x && __x->__right_) {
+        __x = __x->__right_;
+    }
+    return __x;
+}
+
+template <class _NodePtr>
+void __inorder(_NodePtr __x) {
+    if (__x) {
+        __inorder(__x->__left_);
+        std::cout << __x->__key_ << " ";
+        __inorder(__x->__right_);
+    }
+}
+
+template <class _NodePtr, class _Tp>
+std::pair<_NodePtr, bool> __insertBST(_NodePtr& __root, const _Tp& key) {
+    if (!__root) {
+        __root = new Node<_Tp>(key);
+        return std::pair<_NodePtr, bool>(__root, true);
+    }
+    if (key < __root->__key_) {
+        return __insertBST(__root->__left_, key);
+    } else if (key > __root->__key_) {
+        return __insertBST(__root->__right_, key);
+    }
+    return std::pair<_NodePtr, bool>(__root, false); // Key already exists
+}
+
+template <class _NodePtr, class _Tp>
+_NodePtr __eraseBST(_NodePtr& __root, const _Tp& key, bool& display_tree) {
+    if (!__root) {
+        display_tree = false;
+        return nullptr;
+    }
+
+    if (key < __root->__key_) {
+        __root->__left_ = __eraseBST(__root->__left_, key, display_tree);
+    } else if (key > __root->__key_) {
+        __root->__right_ = __eraseBST(__root->__right_, key, display_tree);
+    } else {
+        if (!__root->__left_) {
+            _NodePtr temp = __root->__right_;
+            delete __root;
+            __root = temp;
+        } else if (!__root->__right_) {
+            _NodePtr temp = __root->__left_;
+            delete __root;
+            __root = temp;
+        } else {
+            unsigned left_height = __height(__root->__left_);
+            unsigned right_height = __height(__root->__right_);
+            if (left_height >= right_height) {
+                _NodePtr temp = __tree_max(__root->__left_);
+                __root->__key_ = temp->__key_;
+                __root->__left_ = __eraseBST(__root->__left_, temp->__key_, display_tree);
+            } else {
+                _NodePtr temp = __tree_min(__root->__right_);
+                __root->__key_ = temp->__key_;
+                __root->__right_ = __eraseBST(__root->__right_, temp->__key_, display_tree);
+            }
+        }
+    }
+
+    return __root;
+}
+
+template <class _NodePtr>
+void __clear(_NodePtr& __x) {
+    if (__x) {
+        __clear(__x->__left_);
+        __clear(__x->__right_);
+        delete __x;
+        __x = nullptr;
+    }
+}
+
 template <class _Tp>
 class BST {
 public:
     typedef _Tp key_type;
+    typedef std::size_t size_type;
     typedef Node<key_type>* pointer;
+    typedef const Node<key_type>* const_pointer;
 
 private:
     pointer __root_;
-
-    unsigned int __height(pointer node) {
-        return node ? node->height : 0;
-    }
-
-    void __update_height(pointer node) {
-        if (node) {
-            node->height = 1 + std::max(__height(node->__left_), __height(node->__right_));
-        }
-    }
-
-    pointer __insert(pointer& root, const key_type& key, bool& success) {
-        pointer p = root, q = nullptr;
-        std::stack<pointer> stack;
-
-        while (p) {
-            if (key == p->__key_) {
-                success = false;
-                return root; // 이미 존재하는 키
-            }
-            q = p;
-            stack.push(q);
-            p = (key < p->__key_) ? p->__left_ : p->__right_;
-        }
-
-        pointer newNode = new Node<key_type>(key);
-        if (!q) {
-            root = newNode; // 트리가 비어 있는 경우
-        } else if (key < q->__key_) {
-            q->__left_ = newNode;
-        } else {
-            q->__right_ = newNode;
-        }
-
-        success = true;
-
-        while (!stack.empty()) {
-            q = stack.top();
-            stack.pop();
-            __update_height(q);
-        }
-
-        return root;
-    }
-
-    pointer __delete(pointer& root, const key_type& key, bool& success) {
-        pointer p = root, q = nullptr;
-        std::stack<pointer> stack;
-
-        while (p && p->__key_ != key) {
-            q = p;
-            stack.push(q);
-            p = (key < p->__key_) ? p->__left_ : p->__right_;
-        }
-
-        if (!p) {
-            success = false; // 키가 존재하지 않음
-            return root;
-        }
-
-        if (p->__left_ && p->__right_) {
-            stack.push(p);
-            pointer temp = p;
-            if (__height(p->__left_) < __height(p->__right_)) {
-                p = p->__right_;
-                while (p->__left_) {
-                    stack.push(p);
-                    p = p->__left_;
-                }
-            } else {
-                p = p->__left_;
-                while (p->__right_) {
-                    stack.push(p);
-                    p = p->__right_;
-                }
-            }
-            temp->__key_ = p->__key_;
-            q = stack.top();
-        }
-
-        pointer child = (p->__left_) ? p->__left_ : p->__right_;
-
-        if (!q) {
-            root = child; // 삭제할 노드가 루트인 경우
-        } else if (q->__left_ == p) {
-            q->__left_ = child;
-        } else {
-            q->__right_ = child;
-        }
-
-        delete p;
-        success = true;
-
-        while (!stack.empty()) {
-            q = stack.top();
-            stack.pop();
-            __update_height(q);
-        }
-
-        return root;
-    }
+    bool display_tree;
 
 public:
-    BST() : __root_(nullptr) {}
+    BST() : __root_(nullptr), display_tree(true) {}
 
-    void insert(const key_type& key) {
-        bool success;
-        __root_ = __insert(__root_, key, success);
-        if (!success) {
-            std::cerr << "i " << key << ": The key already exists" << std::endl;
-        } else {
-            std::cout << __root_ << std::endl;
-        }
+    size_type height() const {
+        return __height(__root_);
     }
 
-    void erase(const key_type& key) {
-        bool success;
-        __root_ = __delete(__root_, key, success);
-        if (!success) {
-            std::cerr << "d " << key << ": The key does not exist" << std::endl;
-        } else if (__root_) {
-            std::cout << __root_ << std::endl;
-        } else {
-            std::cout << "<>" << std::endl;
+    size_type size() const {
+        return __size(__root_);
+    }
+
+    void inorder() const {
+        __inorder(__root_);
+        std::cout << std::endl;
+    }
+
+    std::pair<const_pointer, bool> insert(const key_type& key) {
+        std::pair<pointer, bool> result = __insertBST(__root_, key);
+        if (!result.second) {
+            std::cerr << "i " << key << ": The key already exists" << std::endl;
         }
+        return std::pair<const_pointer, bool>(result.first, result.second);
+    }
+
+    const_pointer erase(const key_type& key) {
+        bool tempbool = true;
+        pointer __r = __eraseBST(__root_, key, tempbool);
+        if (!tempbool) {
+            std::cerr << "d " << key << ": The key does not exist" << std::endl;
+            display_tree = false;
+        } else {
+            display_tree = (__root_ != nullptr);
+        }
+
+        return __root_;
     }
 
     void clear() {
-        while (__root_) {
-            erase(__root_->__key_);
+        __clear(__root_);
+    }
+
+    void set_display_tree(bool value) {
+        display_tree = value;
+    }
+
+    bool get_display_tree() const {
+        return display_tree;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const BST& tree) {
+        if (tree.display_tree && tree.__root_) {
+            os << tree.__root_;
         }
+        return os;
     }
 };
 
@@ -178,12 +208,41 @@ int main() {
     BST<int> tree;
     char command;
     int key;
+    bool first_output = true;
 
     while (std::cin >> command >> key) {
-        if (command == 'i') {
-            tree.insert(key);
-        } else if (command == 'd') {
-            tree.erase(key);
+        tree.set_display_tree(true);
+        switch (command) {
+            case 'i':
+                if (!tree.insert(key).second) {
+                    tree.set_display_tree(false);
+                }
+                if (tree.get_display_tree()) {
+                    if (!first_output) std::cout << std::endl;
+                    std::cout << tree;
+                    first_output = false;
+                }
+                break;
+
+            case 'd':
+                if (tree.size() == 0) {
+                    // 트리가 비어있을 때 삭제 시도 시 에러 메시지 출력만 하고 빈 트리 출력 생략
+                    std::cerr << "d " << key << ": The key does not exist" << std::endl;
+                } else {
+                    if (tree.erase(key) == nullptr) {
+                        tree.set_display_tree(false);
+                    }
+                    if (tree.get_display_tree()) {
+                        if (!first_output) std::cout << std::endl;
+                        std::cout << tree;
+                        first_output = false;
+                    }
+                }
+                break;
+
+            default:
+                std::cerr << "Invalid command: " << command << std::endl;
+                return 1;
         }
     }
 
