@@ -16,14 +16,14 @@ private:
         return (a > b) ? a : b;
     }
 
-    int Height(Node* node) {
+    int height(Node* node) {
         if (node == nullptr) return 0;
-        return 1 + max(Height(node->left), Height(node->right));
+        return 1 + max(height(node->left), height(node->right));
     }
 
-    int Size(Node* node) {
+    int size(Node* node) {
         if (node == nullptr) return 0;
-        return 1 + Size(node->left) + Size(node->right);
+        return 1 + size(node->left) + size(node->right);
     }
 
     bool insertBST(Node*& T, int newKey) {
@@ -84,12 +84,12 @@ private:
                 node = node->left;
                 delete temp;
             } else {
-                int leftHeight = Height(node->left);
-                int rightHeight = Height(node->right);
+                int leftHeight = height(node->left);
+                int rightHeight = height(node->right);
                 Node* temp = nullptr;
 
                 if (leftHeight == rightHeight) {
-                    if (Size(node->left) >= Size(node->right)) {
+                    if (size(node->left) >= size(node->right)) {
                         temp = maxInLeft(node->left);
                         node->key = temp->key;
                         deleteBST(node->left, temp->key, success);
